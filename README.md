@@ -1,5 +1,7 @@
 # shopco-ecommerce-app
 
+[![CI](https://github.com/senaa123/shopco-ecommerce-app/actions/workflows/ci.yml/badge.svg)](https://github.com/senaa123/shopco-ecommerce-app/actions/workflows/ci.yml)
+
 Full-stack e-commerce application for a minimalist black / white / gray fashion
 brand.
 
