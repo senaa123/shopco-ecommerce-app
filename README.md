@@ -6,8 +6,9 @@ brand.
 - **frontend/** — Next.js (App Router) + TypeScript + Tailwind CSS v4
 - **backend/** — NestJS + TypeScript + Prisma (PostgreSQL)
 
-Implemented so far: project scaffolding, the **Auth** module and the **Users**
-module. Remaining feature modules are added in later steps.
+Implemented so far: project scaffolding and the **Auth**, **Users**, **Catalog**,
+**Cart** and **Orders** modules. Remaining feature modules are added in later
+steps.
 
 ## Repository layout
 
@@ -27,16 +28,15 @@ shopco-ecommerce-app/
 │       ├── infrastructure/
 │       │   ├── database/      PrismaModule / PrismaService
 │       │   └── persistence/   shared PrismaUserRepository + USER_REPOSITORY token
-│       └── modules/
-│           ├── auth/          register / login / logout / me  (Clean Architecture)
-│           └── users/         profile + admin user list       (Clean Architecture)
+│       └── modules/           auth · users · catalog · cart · orders
 └── README.md
 ```
 
 Each feature module is split into `presentation/` (controllers + DTOs),
 `application/` (use-cases), `domain/` (entities + repository interfaces) and
-`infrastructure/` (Passport strategies, persistence). Auth and Users share a
-single `UserRepository` contract and its Prisma implementation.
+`infrastructure/` (Passport strategies, per-module Prisma repositories). Auth and
+Users share a single `UserRepository` contract; the other modules own their
+repositories. All money math is done server-side and rounded to cents.
 
 ## API
 
@@ -52,6 +52,23 @@ Auth cookies: login sets an httpOnly `access_token` JWT cookie
 | `GET /users/me`      | JWT                     | Current user's profile (incl. `createdAt`)   |
 | `PATCH /users/me`    | JWT                     | Update `name` only                           |
 | `GET /users`         | JWT + `@Roles('ADMIN')` | Paginated user list `?page=1&limit=20` → `{ data, total, page, limit }` |
+| `GET /categories`    | public                  | All categories                               |
+| `POST /categories`   | admin                   | Create a category                            |
+| `PATCH /categories/:id` | admin                | Update a category                            |
+| `GET /products`      | public                  | Filter/sort/paginate — `?categorySlug&minPrice&maxPrice&color&size&dressStyle&search&sort&page&limit`; excludes soft-deleted; → `{ data, total, page, limit }` |
+| `GET /products/:slug`| public                  | Full detail: variants, images, category, `averageRating` |
+| `POST /products`     | admin                   | Create product + nested `variants[]` + `images[]` (one transaction) |
+| `PATCH /products/:id`| admin                   | Update scalar product fields                 |
+| `DELETE /products/:id`| admin                  | Soft delete (`isDeleted = true`)             |
+| `GET /cart`          | JWT                     | Current user's cart + computed `subtotal`    |
+| `POST /cart/items`   | JWT                     | Add item (merges same variant; validates stock) |
+| `PATCH /cart/items/:id` | JWT                  | Change quantity (validates stock)            |
+| `DELETE /cart/items/:id` | JWT                 | Remove item                                  |
+| `POST /orders`       | JWT                     | Create order from cart — recomputes totals, applies `WELCOME20` (20%), $15 delivery (free over $200 after discount), decrements stock + clears cart in one transaction |
+| `GET /orders`        | JWT                     | Current user's own orders                    |
+| `GET /orders/:id`    | JWT                     | One order (owner, or any if ADMIN)           |
+| `GET /admin/orders`  | admin                   | All orders, paginated                        |
+| `PATCH /admin/orders/:id/status` | admin       | Transition status (PENDING→PAID→SHIPPED→DELIVERED; →CANCELLED from PENDING/PAID) |
 
 ## Prerequisites
 
