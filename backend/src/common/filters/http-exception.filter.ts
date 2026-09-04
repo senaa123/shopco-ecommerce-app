@@ -16,6 +16,19 @@ interface ErrorBody {
   timestamp: string;
 }
 
+/** `402` -> `"Payment Required"`, falling back to a generic label. */
+function reasonFromStatus(status: number): string {
+  const name: string | undefined = HttpStatus[status];
+  if (!name) {
+    return status >= 500 ? 'Internal Server Error' : 'Error';
+  }
+  return name
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 /**
  * Global exception filter that normalises every error into a consistent JSON
  * shape:
@@ -45,7 +58,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     let message: string | string[] = 'Internal server error';
-    let error = 'Internal Server Error';
+    let error = reasonFromStatus(status);
 
     if (exception instanceof HttpException) {
       const responseBody = exception.getResponse();
@@ -54,7 +67,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else if (typeof responseBody === 'object' && responseBody !== null) {
         const body = responseBody as Record<string, unknown>;
         message = (body.message as string | string[]) ?? exception.message;
-        error = (body.error as string) ?? exception.name;
+        error = (body.error as string) ?? reasonFromStatus(status);
       }
     }
 

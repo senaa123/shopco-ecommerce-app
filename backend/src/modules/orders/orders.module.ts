@@ -21,5 +21,6 @@ import { OrdersController } from './presentation/orders.controller';
     UpdateOrderStatusUseCase,
     { provide: ORDER_REPOSITORY, useClass: PrismaOrderRepository },
   ],
+  exports: [GetOrderByIdUseCase],
 })
 export class OrdersModule {}

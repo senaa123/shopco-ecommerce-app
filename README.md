@@ -7,8 +7,8 @@ brand.
 - **backend/** — NestJS + TypeScript + Prisma (PostgreSQL)
 
 Implemented so far: project scaffolding and the **Auth**, **Users**, **Catalog**,
-**Cart** and **Orders** modules. Remaining feature modules are added in later
-steps.
+**Cart**, **Orders**, **Payments** (mock gateway) and **Reviews** modules.
+Remaining feature modules are added in later steps.
 
 ## Repository layout
 
@@ -28,7 +28,7 @@ shopco-ecommerce-app/
 │       ├── infrastructure/
 │       │   ├── database/      PrismaModule / PrismaService
 │       │   └── persistence/   shared PrismaUserRepository + USER_REPOSITORY token
-│       └── modules/           auth · users · catalog · cart · orders
+│       └── modules/           auth · users · catalog · cart · orders · payments · reviews
 └── README.md
 ```
 
@@ -69,6 +69,20 @@ Auth cookies: login sets an httpOnly `access_token` JWT cookie
 | `GET /orders/:id`    | JWT                     | One order (owner, or any if ADMIN)           |
 | `GET /admin/orders`  | admin                   | All orders, paginated                        |
 | `PATCH /admin/orders/:id/status` | admin       | Transition status (PENDING→PAID→SHIPPED→DELIVERED; →CANCELLED from PENDING/PAID) |
+| `POST /payments`     | JWT                     | Mock-charge a PENDING order (`{ orderId, method: "CARD"｜"COD" }`); SUCCESS → order PAID, FAILED → `402`, order stays PENDING for retry |
+| `GET /products/:productId/reviews` | public    | Paginated reviews with reviewer name + rating                          |
+| `POST /products/:productId/reviews` | JWT      | One review per user per product; requires a DELIVERED order containing the product |
+
+### Notes / limitations
+
+- **Payments** use `MockPaymentGateway` (bound to `PAYMENT_GATEWAY` in
+  `payments.module.ts`). CARD charges fail ~10% of the time at random; COD always
+  succeeds. Swapping in a real Stripe/PayPal adapter is a one-line change to that
+  provider binding.
+- **Reviews** enforce the "must have purchased" rule: a review is only accepted
+  when the user has a `DELIVERED` order containing that product.
+- Product average rating is computed on the fly from `Review.rating` in
+  `get-product-by-slug` (not stored on `Product`).
 
 ## Prerequisites
 
