@@ -108,26 +108,41 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async update(id: string, data: UpdateProductData): Promise<Product> {
-    const row = await this.prisma.product.update({
-      where: { id },
-      data: {
-        name: data.name,
-        slug: data.slug,
-        description: data.description,
-        price: data.price,
-        discountPrice: data.discountPrice,
-        type: data.type,
-        dressStyle: data.dressStyle,
-        ...(data.categoryId
-          ? { category: { connect: { id: data.categoryId } } }
-          : {}),
-      },
-      include: {
-        category: true,
-        images: true,
-        variants: true,
-        reviews: { select: { rating: true } },
-      },
+    const row = await this.prisma.$transaction(async (tx) => {
+      if (data.images) {
+        // Replace the whole image set.
+        await tx.productImage.deleteMany({ where: { productId: id } });
+        if (data.images.length > 0) {
+          await tx.productImage.createMany({
+            data: data.images.map((image) => ({
+              productId: id,
+              url: image.url,
+            })),
+          });
+        }
+      }
+
+      return tx.product.update({
+        where: { id },
+        data: {
+          name: data.name,
+          slug: data.slug,
+          description: data.description,
+          price: data.price,
+          discountPrice: data.discountPrice,
+          type: data.type,
+          dressStyle: data.dressStyle,
+          ...(data.categoryId
+            ? { category: { connect: { id: data.categoryId } } }
+            : {}),
+        },
+        include: {
+          category: true,
+          images: true,
+          variants: true,
+          reviews: { select: { rating: true } },
+        },
+      });
     });
     return this.mapDetailRow(row);
   }

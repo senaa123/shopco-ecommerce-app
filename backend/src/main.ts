@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -14,6 +15,10 @@ async function bootstrap(): Promise<void> {
     origin: frontendUrl,
     credentials: true,
   });
+
+  // Product creates/updates can carry base64 image data URIs.
+  app.use(json({ limit: '12mb' }));
+  app.use(urlencoded({ extended: true, limit: '12mb' }));
 
   app.use(cookieParser());
 

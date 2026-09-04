@@ -49,6 +49,8 @@ export interface UpdateProductData {
   categoryId?: string;
   type?: string | null;
   dressStyle?: string | null;
+  /** When set, replaces the product's whole image list. */
+  images?: CreateImageData[];
 }
 
 export interface PaginatedProducts {

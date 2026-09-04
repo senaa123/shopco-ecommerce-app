@@ -25,6 +25,7 @@ export interface UpdateProductInput {
   categoryId?: string;
   type?: string | null;
   dressStyle?: string | null;
+  images?: { url: string }[];
 }
 
 @Injectable()
@@ -60,6 +61,9 @@ export class UpdateProductUseCase {
     };
     if (input.slug !== undefined) {
       data.slug = slugify(input.slug);
+    }
+    if (input.images !== undefined) {
+      data.images = input.images;
     }
 
     return this.productRepository.update(id, data);

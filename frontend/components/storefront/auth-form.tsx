@@ -13,7 +13,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const params = useSearchParams();
   const setUser = useAuthStore((s) => s.setUser);
   const setCartCount = useAuthStore((s) => s.setCartCount);
-  const redirectTo = params.get("redirect") || "/";
+  const explicitRedirect = params.get("redirect");
 
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         /* ignore */
       }
 
-      router.push(redirectTo);
+      // Admins land on the admin panel unless a specific redirect was requested.
+      const destination =
+        explicitRedirect ??
+        (result.user.role === "ADMIN" ? "/admin" : "/");
+      router.push(destination);
       router.refresh();
     } catch (err) {
       setError(

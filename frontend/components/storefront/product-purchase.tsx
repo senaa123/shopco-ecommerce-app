@@ -139,7 +139,7 @@ export function ProductPurchase({ product }: { product: Product }) {
         <p className="text-sm text-primary-500">
           {selectedVariant
             ? stock > 0
-              ? `${stock} in stock`
+              ? `${stock} available`
               : "Out of stock"
             : "This combination is unavailable"}
         </p>

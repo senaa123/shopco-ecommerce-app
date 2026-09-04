@@ -1,39 +1,73 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
+import { HeroImage } from "@/components/storefront/hero-image";
 import { HomeProductRow } from "@/components/storefront/home-product-row";
+import { SparkleIcon } from "@/components/storefront/icons";
 import { Testimonials } from "@/components/storefront/testimonials";
+import { cn } from "@/lib/cn";
 
 const BRANDS = ["VERSACE", "ZARA", "GUCCI", "PRADA", "Calvin Klein"];
 
 const DRESS_STYLES = [
-  { label: "Casual", slug: "casual", span: "md:col-span-2" },
-  { label: "Formal", slug: "formal", span: "md:col-span-3" },
-  { label: "Party", slug: "party", span: "md:col-span-3" },
-  { label: "Gym", slug: "gym", span: "md:col-span-2" },
+  {
+    label: "Casual",
+    slug: "casual",
+    img: "/styles/casual.jpg",
+    span: "md:col-span-2",
+    position: "object-[80%_20%]",
+  },
+  {
+    label: "Formal",
+    slug: "formal",
+    img: "/styles/formal.jpg",
+    span: "md:col-span-3",
+    position: "object-[70%_12%]",
+  },
+  {
+    label: "Party",
+    slug: "party",
+    img: "/styles/party.jpg",
+    span: "md:col-span-3",
+    position: "object-[65%_12%]",
+  },
+  {
+    label: "Gym",
+    slug: "gym",
+    img: "/styles/gym.jpg",
+    span: "md:col-span-2",
+    position: "object-[60%_5%]",
+  },
 ];
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <p className="text-2xl font-bold sm:text-3xl">{value}</p>
-      <p className="text-xs text-primary-500 sm:text-sm">{label}</p>
+      <p className="text-2xl font-bold text-foreground sm:text-[40px] sm:leading-none">
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-primary-500 sm:text-sm">{label}</p>
     </div>
   );
+}
+
+function StatDivider() {
+  return <span className="hidden h-12 w-px bg-black/10 sm:block" aria-hidden />;
 }
 
 export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-surface">
-        <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-14 md:grid-cols-2 md:py-20">
-          <div className="flex flex-col justify-center gap-6">
-            <h1 className="font-display text-4xl leading-[1.05] sm:text-5xl md:text-6xl">
+      <section className="relative overflow-hidden bg-[#F2F0F1]">
+        <div className="mx-auto max-w-[1240px] px-4">
+          <div className="relative z-10 max-w-[600px] py-12 lg:py-[116px]">
+            <h1 className="font-display text-[36px] leading-[0.95] sm:text-[56px] lg:text-[64px]">
               Find clothes that matches your style
             </h1>
-            <p className="max-w-md text-sm text-primary-500">
+            <p className="mt-5 max-w-[545px] text-sm text-primary-600 sm:mt-6 sm:text-base">
               Browse through our diverse range of meticulously crafted garments,
               designed to bring out your individuality and cater to your sense of
               style.
@@ -42,23 +76,28 @@ export default function HomePage() {
               href="/shop/all"
               className={buttonVariants({
                 size: "lg",
-                className: "w-full sm:w-52",
+                className: "mt-8 w-full px-14 sm:w-[210px]",
               })}
             >
               Shop Now
             </Link>
-            <div className="mt-2 flex flex-wrap gap-x-8 gap-y-4 border-t border-border pt-6">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 sm:mt-12 sm:gap-x-8">
               <Stat value="200+" label="International Brands" />
+              <StatDivider />
               <Stat value="2,000+" label="High-Quality Products" />
+              <StatDivider />
               <Stat value="30,000+" label="Happy Customers" />
             </div>
           </div>
-          <div className="relative hidden min-h-[380px] items-center justify-center rounded-[20px] bg-primary-200 md:flex">
-            <span className="font-display text-5xl text-white/70">SHOP.CO</span>
-            <span className="absolute right-6 top-10 text-4xl">✦</span>
-            <span className="absolute bottom-16 left-8 text-2xl">✦</span>
-          </div>
         </div>
+
+        {/* Photo — bleeds to the right edge on large screens, stacks below on mobile */}
+        <HeroImage className="absolute right-0 top-0 hidden h-full w-[45%] xl:w-[42%] lg:block" />
+        <HeroImage className="relative h-[360px] w-full sm:h-[440px] lg:hidden" />
+
+        {/* Decorative sparkles */}
+        <SparkleIcon className="absolute right-[7%] top-[16%] hidden h-16 w-16 text-black lg:block xl:h-[104px] xl:w-[104px]" />
+        <SparkleIcon className="absolute left-[49%] top-[38%] hidden h-9 w-9 text-black lg:block xl:h-14 xl:w-14" />
       </section>
 
       {/* Brand strip */}
@@ -109,18 +148,34 @@ export default function HomePage() {
 
       {/* Browse by dress style */}
       <section className="mx-auto max-w-[1240px] px-4 py-8">
-        <div className="rounded-[40px] bg-surface px-6 py-10 md:px-16 md:py-16">
+        <div className="rounded-[20px] bg-surface px-6 py-10 sm:rounded-[40px] md:px-16 md:py-16">
           <h2 className="text-center font-display text-3xl md:text-5xl">
             Browse by dress style
           </h2>
-          <div className="mt-10 grid gap-5 md:grid-cols-5">
+          <div className="mt-9 grid gap-4 sm:gap-5 md:grid-cols-5">
             {DRESS_STYLES.map((s) => (
               <Link
                 key={s.slug}
                 href={`/shop/${s.slug}`}
-                className={`${s.span} flex h-48 items-start justify-start overflow-hidden rounded-[20px] bg-white p-6 transition-shadow hover:shadow-md`}
+                className={cn(
+                  "group relative h-[190px] overflow-hidden rounded-[20px] bg-white md:h-[240px] lg:h-[290px]",
+                  s.span,
+                )}
               >
-                <span className="text-2xl font-bold">{s.label}</span>
+                <Image
+                  src={s.img}
+                  alt={`${s.label} style`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  className={cn(
+                    "object-cover transition-transform duration-500 group-hover:scale-105",
+                    s.position,
+                  )}
+                />
+                <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),rgba(255,255,255,0)_42%)]" />
+                <span className="absolute left-6 top-5 z-10 text-2xl font-bold text-foreground">
+                  {s.label}
+                </span>
               </Link>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma.service';
 import { Order } from '../../domain/entities/order.entity';
@@ -29,26 +29,8 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async placeOrder(input: PlaceOrderInput): Promise<Order> {
     const row = await this.prisma.$transaction(async (tx) => {
-      // Re-check stock inside the transaction to guard against races.
-      for (const line of input.lines) {
-        const variant = await tx.productVariant.findUnique({
-          where: { id: line.variantId },
-          select: { stock: true },
-        });
-        if (!variant || variant.stock < line.quantity) {
-          throw new BadRequestException(
-            `Insufficient stock for variant ${line.variantId}`,
-          );
-        }
-      }
-
-      for (const line of input.lines) {
-        await tx.productVariant.update({
-          where: { id: line.variantId },
-          data: { stock: { decrement: line.quantity } },
-        });
-      }
-
+      // Stock was already reserved when each item was added to the cart, so we
+      // just turn that reservation into an order and clear the cart.
       const created = await tx.order.create({
         data: {
           userId: input.userId,
@@ -110,10 +92,25 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   async updateStatus(id: string, status: OrderStatus): Promise<Order> {
-    const row = await this.prisma.order.update({
-      where: { id },
-      data: { status },
-      include: orderInclude,
+    const row = await this.prisma.$transaction(async (tx) => {
+      // Cancelling an order releases the stock its items were holding.
+      if (status === OrderStatus.CANCELLED) {
+        const items = await tx.orderItem.findMany({
+          where: { orderId: id },
+          select: { variantId: true, quantity: true },
+        });
+        for (const item of items) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+      return tx.order.update({
+        where: { id },
+        data: { status },
+        include: orderInclude,
+      });
     });
     return this.mapRow(row);
   }

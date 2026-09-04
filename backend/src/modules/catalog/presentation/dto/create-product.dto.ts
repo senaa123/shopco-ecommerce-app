@@ -7,7 +7,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUrl,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -27,7 +27,11 @@ export class CreateProductVariantDto {
 }
 
 export class CreateProductImageDto {
-  @IsUrl()
+  /** Either an http(s) URL or a base64 image data URI (uploaded from a device). */
+  @IsString()
+  @Matches(/^(https?:\/\/|data:image\/(png|jpe?g|webp|gif|avif);base64,)/i, {
+    message: 'image url must be an http(s) URL or a base64 image data URI',
+  })
   url: string;
 }
 

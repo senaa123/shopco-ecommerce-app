@@ -133,7 +133,7 @@ export function CartView({ initial }: { initial: Cart }) {
                     size="sm"
                     value={item.quantity}
                     min={1}
-                    max={item.variant.stock}
+                    max={item.quantity + item.variant.stock}
                     disabled={busyId === item.id}
                     onChange={(q) =>
                       mutate(() => updateCartItem(item.id, q), item.id)

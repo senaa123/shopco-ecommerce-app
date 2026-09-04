@@ -18,7 +18,8 @@ export class RemoveCartItemUseCase {
       throw new NotFoundException('Cart item not found');
     }
 
-    await this.cartRepository.deleteItem(itemId);
+    // Returns the reserved stock and deletes the line atomically.
+    await this.cartRepository.removeItem(itemId);
     return this.getCartUseCase.execute(userId);
   }
 }

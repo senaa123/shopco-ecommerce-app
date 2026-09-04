@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   CART_REPOSITORY,
   type CartRepository,
@@ -27,20 +22,9 @@ export class UpdateCartItemUseCase {
       throw new NotFoundException('Cart item not found');
     }
 
-    const variant = await this.cartRepository.findVariantForCart(
-      item.variantId,
-    );
-    if (!variant) {
-      throw new NotFoundException('Product variant not found');
-    }
-
-    if (quantity > variant.stock) {
-      throw new BadRequestException(
-        `Only ${variant.stock} in stock for this variant`,
-      );
-    }
-
-    await this.cartRepository.updateItemQuantity(itemId, quantity);
+    // Adjusts the stock reservation by the delta atomically — throws
+    // BadRequestException when increasing beyond what's available.
+    await this.cartRepository.setItemQuantity(itemId, quantity);
     return this.getCartUseCase.execute(userId);
   }
 }
