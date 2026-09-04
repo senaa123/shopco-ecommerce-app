@@ -58,7 +58,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (status >= 500) {
       this.logger.error(exception);
     }
 

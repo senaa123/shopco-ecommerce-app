@@ -6,8 +6,8 @@ brand.
 - **frontend/** — Next.js (App Router) + TypeScript + Tailwind CSS v4
 - **backend/** — NestJS + TypeScript + Prisma (PostgreSQL)
 
-> This repository is currently **scaffolding only** — folder structure, tooling
-> and configuration are in place; business logic is added in later steps.
+Implemented so far: project scaffolding, the **Auth** module and the **Users**
+module. Remaining feature modules are added in later steps.
 
 ## Repository layout
 
@@ -24,10 +24,34 @@ shopco-ecommerce-app/
 │   └── src/
 │       ├── config/
 │       ├── common/{decorators,guards,filters,interceptors,pipes}/
-│       ├── infrastructure/database/   PrismaModule / PrismaService
-│       └── modules/          feature modules (added later)
+│       ├── infrastructure/
+│       │   ├── database/      PrismaModule / PrismaService
+│       │   └── persistence/   shared PrismaUserRepository + USER_REPOSITORY token
+│       └── modules/
+│           ├── auth/          register / login / logout / me  (Clean Architecture)
+│           └── users/         profile + admin user list       (Clean Architecture)
 └── README.md
 ```
+
+Each feature module is split into `presentation/` (controllers + DTOs),
+`application/` (use-cases), `domain/` (entities + repository interfaces) and
+`infrastructure/` (Passport strategies, persistence). Auth and Users share a
+single `UserRepository` contract and its Prisma implementation.
+
+## API
+
+Auth cookies: login sets an httpOnly `access_token` JWT cookie
+(`sameSite=lax`, `secure=false` in dev); protected routes read it back.
+
+| Method & path        | Auth                    | Description                                   |
+| -------------------- | ----------------------- | -------------------------------------------- |
+| `POST /auth/register`| public                  | Create a CUSTOMER account (role is forced)   |
+| `POST /auth/login`   | public                  | Verify credentials, set the cookie           |
+| `POST /auth/logout`  | public                  | Clear the cookie                             |
+| `GET /auth/me`       | JWT                     | Current user from the JWT payload            |
+| `GET /users/me`      | JWT                     | Current user's profile (incl. `createdAt`)   |
+| `PATCH /users/me`    | JWT                     | Update `name` only                           |
+| `GET /users`         | JWT + `@Roles('ADMIN')` | Paginated user list `?page=1&limit=20` → `{ data, total, page, limit }` |
 
 ## Prerequisites
 
