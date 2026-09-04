@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma.service';
 import { CartItem } from '../../domain/entities/cart-item.entity';
 import {
+  AddCartItemData,
   CartItemRef,
   CartRepository,
-  CreateCartItemData,
   VariantForCart,
 } from '../../domain/repositories/cart-repository.interface';
 
@@ -87,16 +87,89 @@ export class PrismaCartRepository implements CartRepository {
     };
   }
 
-  async createItem(data: CreateCartItemData): Promise<void> {
-    await this.prisma.cartItem.create({ data });
+  async addItem(data: AddCartItemData): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await this.reserveStock(tx, data.variantId, data.quantity);
+
+      const existing = await tx.cartItem.findFirst({
+        where: { userId: data.userId, variantId: data.variantId },
+        select: { id: true },
+      });
+      if (existing) {
+        await tx.cartItem.update({
+          where: { id: existing.id },
+          data: { quantity: { increment: data.quantity } },
+        });
+      } else {
+        await tx.cartItem.create({ data });
+      }
+    });
   }
 
-  async updateItemQuantity(id: string, quantity: number): Promise<void> {
-    await this.prisma.cartItem.update({ where: { id }, data: { quantity } });
+  async setItemQuantity(id: string, quantity: number): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const item = await tx.cartItem.findUnique({
+        where: { id },
+        select: { quantity: true, variantId: true },
+      });
+      if (!item) {
+        return;
+      }
+      const delta = quantity - item.quantity;
+      if (delta > 0) {
+        await this.reserveStock(tx, item.variantId, delta, item.quantity);
+      } else if (delta < 0) {
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { increment: -delta } },
+        });
+      }
+      await tx.cartItem.update({ where: { id }, data: { quantity } });
+    });
   }
 
-  async deleteItem(id: string): Promise<void> {
-    await this.prisma.cartItem.delete({ where: { id } });
+  async removeItem(id: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const item = await tx.cartItem.findUnique({
+        where: { id },
+        select: { quantity: true, variantId: true },
+      });
+      if (!item) {
+        return;
+      }
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: { stock: { increment: item.quantity } },
+      });
+      await tx.cartItem.delete({ where: { id } });
+    });
+  }
+
+  /**
+   * Conditionally decrements `stock` by `units` — the `WHERE stock >= units`
+   * clause makes it race-safe (the row lock re-checks it). `alreadyHeld` is the
+   * quantity this cart line already reserves, used only for the error message.
+   */
+  private async reserveStock(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    units: number,
+    alreadyHeld = 0,
+  ): Promise<void> {
+    const result = await tx.productVariant.updateMany({
+      where: { id: variantId, stock: { gte: units } },
+      data: { stock: { decrement: units } },
+    });
+    if (result.count === 0) {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: variantId },
+        select: { stock: true },
+      });
+      const available = (variant?.stock ?? 0) + alreadyHeld;
+      throw new BadRequestException(
+        `Only ${available} available in stock for this variant`,
+      );
+    }
   }
 
   private mapRow(row: CartItemRow): CartItem {

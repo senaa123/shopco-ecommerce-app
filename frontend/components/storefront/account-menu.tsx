@@ -10,6 +10,7 @@ import { UserIcon } from "./icons";
 export function AccountMenu() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isAdmin = user?.role === "ADMIN";
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -54,6 +55,15 @@ export function AccountMenu() {
               <p className="truncate px-3 py-2 text-xs text-primary-400">
                 {user?.email}
               </p>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="block rounded-xl px-3 py-2 text-sm font-medium hover:bg-surface"
+                  onClick={() => setOpen(false)}
+                >
+                  Admin dashboard
+                </Link>
+              )}
               <Link
                 href="/orders"
                 className="block rounded-xl px-3 py-2 text-sm hover:bg-surface"

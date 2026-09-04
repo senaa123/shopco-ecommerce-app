@@ -23,7 +23,7 @@ export interface VariantForCart {
   };
 }
 
-export interface CreateCartItemData {
+export interface AddCartItemData {
   userId: string;
   productId: string;
   variantId: string;
@@ -34,14 +34,19 @@ export interface CartRepository {
   /** Full cart contents for a user, with product/variant detail and line totals. */
   findItemsByUser(userId: string): Promise<CartItem[]>;
   findItemById(id: string): Promise<CartItemRef | null>;
-  findItemByUserAndVariant(
-    userId: string,
-    variantId: string,
-  ): Promise<CartItemRef | null>;
   findVariantForCart(variantId: string): Promise<VariantForCart | null>;
-  createItem(data: CreateCartItemData): Promise<void>;
-  updateItemQuantity(id: string, quantity: number): Promise<void>;
-  deleteItem(id: string): Promise<void>;
+  /**
+   * Atomically reserves `quantity` units of the variant's stock and adds (or
+   * increments) the cart item. Throws `BadRequestException` if stock is short.
+   */
+  addItem(data: AddCartItemData): Promise<void>;
+  /**
+   * Atomically changes the reservation to `quantity`, returning the freed units
+   * to stock or taking the extra units from it. Throws if stock is short.
+   */
+  setItemQuantity(id: string, quantity: number): Promise<void>;
+  /** Atomically releases the item's reserved stock and removes it. */
+  removeItem(id: string): Promise<void>;
 }
 
 export const CART_REPOSITORY = Symbol('CART_REPOSITORY');

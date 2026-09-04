@@ -1,8 +1,17 @@
-import { IsNotEmpty, IsOptional, IsPositive, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { CreateProductImageDto } from './create-product.dto';
 
 /**
- * Updates scalar product fields only. Variants and images are managed through
- * their own endpoints in a later prompt.
+ * Updates scalar product fields, and optionally replaces the whole image set.
+ * Variant editing is still done at creation.
  */
 export class UpdateProductDto {
   @IsOptional()
@@ -39,4 +48,11 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   dressStyle?: string | null;
+
+  /** When present, replaces every image on the product. */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductImageDto)
+  images?: CreateProductImageDto[];
 }

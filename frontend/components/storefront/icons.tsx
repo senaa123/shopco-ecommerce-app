@@ -77,3 +77,11 @@ export function PlusIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function SparkleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden {...props}>
+      <path d="M32 2c2 18 12 28 30 30-18 2-28 12-30 30-2-18-12-28-30-30 18-2 28-12 30-30Z" />
+    </svg>
+  );
+}

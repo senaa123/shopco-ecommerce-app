@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Newsletter } from "./newsletter";
+import { PaymentBadges } from "./payment-badges";
 
 const LINK_COLUMNS: { title: string; links: { label: string; href: string }[] }[] =
   [
@@ -40,8 +41,6 @@ const LINK_COLUMNS: { title: string; links: { label: string; href: string }[] }[
       ],
     },
   ];
-
-const PAYMENTS = ["VISA", "Mastercard", "PayPal", "Apple Pay", "Google Pay"];
 
 export function Footer() {
   return (
@@ -88,16 +87,7 @@ export function Footer() {
             <p className="text-sm text-primary-400">
               Shop.co © 2000-2023, All Rights Reserved
             </p>
-            <div className="flex gap-2">
-              {PAYMENTS.map((p) => (
-                <span
-                  key={p}
-                  className="rounded-md border border-border bg-white px-2 py-1 text-[10px] font-semibold text-primary-500"
-                >
-                  {p}
-                </span>
-              ))}
-            </div>
+            <PaymentBadges />
           </div>
         </div>
       </div>

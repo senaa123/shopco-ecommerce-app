@@ -134,7 +134,7 @@ export function createProduct(input: ProductWriteInput) {
 
 export function updateProduct(
   id: string,
-  input: Partial<Omit<ProductWriteInput, "variants" | "images">>,
+  input: Partial<Omit<ProductWriteInput, "variants">>,
 ) {
   return apiFetch<Product>(`/products/${id}`, { method: "PATCH", json: input });
 }

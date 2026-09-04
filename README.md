@@ -89,6 +89,15 @@ Auth cookies: login sets an httpOnly `access_token` JWT cookie
 - The storefront's `/shop` price/colour/size filters are driven entirely by URL
   query params, so each change is a fresh server-rendered `GET /products`.
 - Checkout's shipping address is not persisted (mock), matching the brief.
+- **Stock is reserved when an item is added to the cart** (`ProductVariant.stock`
+  is decremented atomically). Removing an item or lowering its quantity returns
+  the stock; cancelling an order (`→ CANCELLED`) returns it too; placing an order
+  just converts the existing reservation. Trade-off: an abandoned cart holds its
+  stock indefinitely — there's no cart-expiry sweep.
+- **Product images** are stored in `ProductImage.url` as either an `http(s)` URL
+  or a base64 `data:` URI. The admin form lets you paste a URL *or* upload a file
+  from the device (downscaled client-side to keep the payload small); the JSON
+  body limit is raised to 12 MB for this.
 
 ## Prerequisites
 
@@ -158,7 +167,7 @@ backend API:
 
 | Route | What it does |
 | ----- | ------------ |
-| `/` | Hero, brand strip, New Arrivals (`?sort=newest`) & Top Selling (`?sort=popular`) rows, dress-style tiles, testimonials |
+| `/` | Hero (photo `public/hero.jpg` + sparkles + stats), brand strip, New Arrivals (`?sort=newest`) & Top Selling (`?sort=popular`) rows, "Browse by dress style" tiles (`public/styles/*.jpg`), testimonials. Footer payment marks are inline-SVG brand badges (`payment-badges.tsx`). |
 | `/shop/[category]` | Server-driven listing — the filter sidebar (price, colour, size, dress style) and sort push URL query params that re-run `GET /products`. `[category]` accepts `all`, a real category slug, or `casual`/`formal`/`party`/`gym` (mapped to the `dressStyle` filter). Paginated. |
 | `/product/[slug]` | Gallery + thumbnails, colour/size variant picker (updates stock), quantity stepper, `Add to Cart`, Details/Reviews/FAQs tabs, review list with "Load More" + a write-review form for logged-in buyers, "You might also like" |
 | `/cart` | Line-item qty (`PATCH`) / remove (`DELETE`), promo code, order summary computed with the same math the backend uses at checkout |
@@ -186,12 +195,14 @@ from `/admin/*`. The backend still enforces real auth on every request.
 library). Persistent left sidebar with a black active state; the top bar reads
 the admin's name from the **same Zustand `auth-store`**. `proxy.ts` is the primary
 guard; `AdminShell` adds a client-side role check that redirects non-admins.
+Logging in as an admin lands on `/admin` (customers land on `/`), and the
+account menu shows an **Admin dashboard** link for admins.
 
 | Route | What it does |
 | ----- | ------------ |
 | `/admin` | Stat cards (total orders, revenue, products, low-stock) aggregated on the client from `GET /admin/orders` + `GET /products` — no new endpoint — plus a recent-orders table |
 | `/admin/products` | Table (name, category, type, price, summed stock, status) with search, **Add Product**, edit / soft-delete row actions |
-| `/admin/products/new`, `/admin/products/[id]` | Product form — scalars + category/type/dress-style selects; on **create** an interactive variants + image-URL editor (`POST /products`); on **edit** scalars only (`PATCH /products/:id`), variants/images shown read-only |
+| `/admin/products/new`, `/admin/products/[id]` | Product form — scalars + category/type/dress-style selects + an image editor (paste URL **or** upload from device) that works on create and edit; variant editing is create-only. `POST /products` / `PATCH /products/:id` |
 | `/admin/categories` | Table + inline add / edit form (`POST` / `PATCH /categories`) |
 | `/admin/orders` | All orders paginated; a per-row status `<select>` calls `PATCH /admin/orders/:id/status` and surfaces the backend's error verbatim on an illegal transition |
 

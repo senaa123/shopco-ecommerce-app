@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -12,9 +13,12 @@ import {
   type ProductVariantInput,
 } from "@/lib/api";
 import type { Category, Product } from "@/lib/api-types";
+import { cn } from "@/lib/cn";
+import { fileToResizedDataUrl, isDataUri } from "@/lib/image";
 
 const TYPES = ["T-shirts", "Shorts", "Shirts", "Hoodie", "Jeans"];
 const DRESS_STYLES = ["Casual", "Formal", "Party", "Gym"];
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB before downscaling
 
 interface FormState {
   name: string;
@@ -71,8 +75,11 @@ export function ProductForm({
     })) ?? [{ size: "", color: "", stock: 0 }],
   );
   const [images, setImages] = useState<string[]>(
-    product?.images.map((i) => i.url) ?? [""],
+    product && product.images.length > 0
+      ? product.images.map((i) => i.url)
+      : [""],
   );
+  const [imageError, setImageError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -84,6 +91,26 @@ export function ProductForm({
       >,
     ) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const setImage = (index: number, value: string) =>
+    setImages((rows) => rows.map((r, j) => (j === index ? value : r)));
+
+  async function handleUpload(index: number, file: File) {
+    setImageError(null);
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please choose an image file.");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setImageError("That image is too large (max 8MB).");
+      return;
+    }
+    try {
+      setImage(index, await fileToResizedDataUrl(file));
+    } catch {
+      setImageError("Could not process that image.");
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,17 +126,21 @@ export function ProductForm({
       type: form.type || null,
       dressStyle: form.dressStyle || null,
     };
+    const imagePayload = images
+      .map((url) => url.trim())
+      .filter(Boolean)
+      .map((url) => ({ url }));
 
     try {
       if (isEdit) {
-        await updateProduct(product.id, scalars);
+        await updateProduct(product.id, { ...scalars, images: imagePayload });
       } else {
         await createProduct({
           ...scalars,
           variants: variants
             .filter((v) => v.size && v.color)
             .map((v) => ({ ...v, stock: Number(v.stock) })),
-          images: images.filter(Boolean).map((url) => ({ url })),
+          images: imagePayload,
         });
       }
       router.push("/admin/products");
@@ -294,55 +325,85 @@ export function ProductForm({
       </Card>
 
       <Card className="flex flex-col gap-3 p-6">
-        <h2 className="text-lg font-bold">Image URLs</h2>
-        {isEdit ? (
-          <>
-            <ul className="flex flex-col gap-1 break-all text-sm text-primary-600">
-              {product.images.length === 0 && <li>—</li>}
-              {product.images.map((img) => (
-                <li key={img.id}>{img.url}</li>
-              ))}
-            </ul>
-            <p className="text-xs text-primary-400">
-              Images are set at creation.
-            </p>
-          </>
-        ) : (
-          <>
-            {images.map((url, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  placeholder="https://…"
-                  value={url}
-                  onChange={(e) =>
-                    setImages((rows) =>
-                      rows.map((r, j) => (j === i ? e.target.value : r)),
-                    )
-                  }
-                 
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((rows) => rows.filter((_, j) => j !== i))
-                  }
-                  className="text-sm text-sale hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="self-start"
-              onClick={() => setImages((rows) => [...rows, ""])}
+        <h2 className="text-lg font-bold">Images</h2>
+        <p className="text-xs text-primary-400">
+          Paste an image URL or upload one from this computer (uploads are
+          downscaled and stored with the product).
+        </p>
+
+        {images.map((value, i) => (
+          <div
+            key={i}
+            className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3"
+          >
+            {value ? (
+              <img
+                src={value}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-lg bg-surface object-cover"
+              />
+            ) : (
+              <div className="h-16 w-16 shrink-0 rounded-lg bg-surface" />
+            )}
+
+            <div className="flex min-w-48 flex-1 flex-col gap-2">
+              <Input
+                placeholder="https://…"
+                value={isDataUri(value) ? "" : value}
+                readOnly={isDataUri(value)}
+                onChange={(e) => setImage(i, e.target.value)}
+                className={cn(isDataUri(value) && "text-primary-400")}
+              />
+              {isDataUri(value) && (
+                <span className="text-xs text-primary-400">
+                  Uploaded from this computer
+                </span>
+              )}
+            </div>
+
+            <label
+              className={cn(
+                "cursor-pointer rounded-pill border border-border px-4 py-2 text-sm hover:bg-surface",
+              )}
             >
-              Add image URL
-            </Button>
-          </>
-        )}
+              Upload
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleUpload(i, file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() =>
+                setImages((rows) =>
+                  rows.length === 1 ? [""] : rows.filter((_, j) => j !== i),
+                )
+              }
+              className="text-sm text-sale hover:underline"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+
+        {imageError && <p className="text-sm text-sale">{imageError}</p>}
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="self-start"
+          onClick={() => setImages((rows) => [...rows, ""])}
+        >
+          Add image
+        </Button>
       </Card>
 
       {error && <p className="text-sm text-sale">{error}</p>}
