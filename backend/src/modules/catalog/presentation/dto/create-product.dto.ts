@@ -57,6 +57,10 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
   dressStyle?: string;
 
   @IsArray()

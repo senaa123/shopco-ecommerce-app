@@ -1,15 +1,19 @@
 import type { ReactNode } from "react";
+import { AnnouncementBar } from "@/components/storefront/announcement-bar";
+import { Footer } from "@/components/storefront/footer";
+import { Navbar } from "@/components/storefront/navbar";
 
-/**
- * Storefront (customer-facing) layout.
- *
- * Placeholder — global storefront chrome (header, footer, cart drawer) is added
- * in a later prompt.
- */
 export default function StorefrontLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  return <div className="flex min-h-full flex-col">{children}</div>;
+  return (
+    <div className="flex min-h-screen flex-col">
+      <AnnouncementBar />
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
+  );
 }

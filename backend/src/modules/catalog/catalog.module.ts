@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { CreateCategoryUseCase } from './application/use-cases/create-category.use-case';
 import { CreateProductUseCase } from './application/use-cases/create-product.use-case';
+import { GetProductByIdUseCase } from './application/use-cases/get-product-by-id.use-case';
 import { GetProductBySlugUseCase } from './application/use-cases/get-product-by-slug.use-case';
 import { ListCategoriesUseCase } from './application/use-cases/list-categories.use-case';
 import { ListProductsUseCase } from './application/use-cases/list-products.use-case';
@@ -21,6 +22,7 @@ import { ProductsController } from './presentation/products.controller';
   providers: [
     ListProductsUseCase,
     GetProductBySlugUseCase,
+    GetProductByIdUseCase,
     CreateProductUseCase,
     UpdateProductUseCase,
     SoftDeleteProductUseCase,

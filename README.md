@@ -14,12 +14,14 @@ Remaining feature modules are added in later steps.
 
 ```
 shopco-ecommerce-app/
-├── frontend/                 Next.js storefront + admin
+├── frontend/                 Next.js 16 (App Router) + Tailwind v4
+│   ├── proxy.ts               route protection (was middleware.ts)
 │   ├── app/
-│   │   ├── (storefront)/      customer-facing route group
+│   │   ├── (storefront)/      home · shop/[category] · product/[slug] · cart
+│   │   │                      · checkout · login · register · orders
 │   │   └── (admin)/admin/     admin dashboard route group
 │   ├── components/{ui,storefront,admin}/
-│   └── lib/
+│   └── lib/                   api-client · api · auth · auth-context · format
 ├── backend/                  NestJS API
 │   ├── prisma/schema.prisma
 │   └── src/
@@ -55,8 +57,9 @@ Auth cookies: login sets an httpOnly `access_token` JWT cookie
 | `GET /categories`    | public                  | All categories                               |
 | `POST /categories`   | admin                   | Create a category                            |
 | `PATCH /categories/:id` | admin                | Update a category                            |
-| `GET /products`      | public                  | Filter/sort/paginate — `?categorySlug&minPrice&maxPrice&color&size&dressStyle&search&sort&page&limit`; excludes soft-deleted; → `{ data, total, page, limit }` |
+| `GET /products`      | public                  | Filter/sort/paginate — `?categorySlug&types&minPrice&maxPrice&color&size&dressStyle&search&sort&page&limit` (`types` is a comma-separated list, `IN`-matched); excludes soft-deleted; → `{ data, total, page, limit }` |
 | `GET /products/:slug`| public                  | Full detail: variants, images, category, `averageRating` |
+| `GET /products/by-id/:id` | admin              | Same detail, looked up by id (for the admin edit form) |
 | `POST /products`     | admin                   | Create product + nested `variants[]` + `images[]` (one transaction) |
 | `PATCH /products/:id`| admin                   | Update scalar product fields                 |
 | `DELETE /products/:id`| admin                  | Soft delete (`isDeleted = true`)             |
@@ -81,8 +84,11 @@ Auth cookies: login sets an httpOnly `access_token` JWT cookie
   provider binding.
 - **Reviews** enforce the "must have purchased" rule: a review is only accepted
   when the user has a `DELIVERED` order containing that product.
-- Product average rating is computed on the fly from `Review.rating` in
-  `get-product-by-slug` (not stored on `Product`).
+- Product average rating is computed on the fly from `Review.rating` (in the
+  product list and detail queries) — never stored on `Product`.
+- The storefront's `/shop` price/colour/size filters are driven entirely by URL
+  query params, so each change is a fresh server-rendered `GET /products`.
+- Checkout's shipping address is not persisted (mock), matching the brief.
 
 ## Prerequisites
 
@@ -116,7 +122,22 @@ Backend npm scripts:
 | `npm run start:dev`       | Start Nest in watch mode                 |
 | `npm run prisma:migrate`  | `prisma migrate dev`                     |
 | `npm run prisma:generate` | Regenerate the Prisma client            |
-| `npm run seed`            | Run `prisma/seed.ts` (placeholder)      |
+| `npm run seed`            | Load demo data (`prisma db seed` → `prisma/seed.ts`) |
+
+`npm run seed` is **idempotent** — it resets the catalog + transactional data
+(users are never touched) and rebuilds it: 4 categories (Casual / Formal / Party /
+Gym), 19 products matching the Figma names/prices (each with 2–3 variants, ≥2
+`picsum.photos` images and 3–5 reviews), plus demo accounts. It prints a summary
+of what it created.
+
+The **admin account is bootstrapped from environment variables** — set
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` in `backend/.env` first (the script never
+hard-codes a password and errors out if they're missing):
+
+| Account | Credentials |
+| ------- | ----------- |
+| Admin | `ADMIN_EMAIL` / `ADMIN_PASSWORD` (from `.env`) |
+| Customers | `ava@`, `liam@`, `noah@`, `mia@`, `ethan@` `shopco.dev` — password `password123` |
 
 ### 3. Frontend
 
@@ -130,6 +151,50 @@ npm run dev                   # http://localhost:3000
 `NEXT_PUBLIC_API_URL` points the frontend at the backend (default
 `http://localhost:4000`).
 
+## Storefront
+
+`frontend/app/(storefront)/` implements the customer-facing site against the
+backend API:
+
+| Route | What it does |
+| ----- | ------------ |
+| `/` | Hero, brand strip, New Arrivals (`?sort=newest`) & Top Selling (`?sort=popular`) rows, dress-style tiles, testimonials |
+| `/shop/[category]` | Server-driven listing — the filter sidebar (price, colour, size, dress style) and sort push URL query params that re-run `GET /products`. `[category]` accepts `all`, a real category slug, or `casual`/`formal`/`party`/`gym` (mapped to the `dressStyle` filter). Paginated. |
+| `/product/[slug]` | Gallery + thumbnails, colour/size variant picker (updates stock), quantity stepper, `Add to Cart`, Details/Reviews/FAQs tabs, review list with "Load More" + a write-review form for logged-in buyers, "You might also like" |
+| `/cart` | Line-item qty (`PATCH`) / remove (`DELETE`), promo code, order summary computed with the same math the backend uses at checkout |
+| `/checkout` | Mock shipping form + payment method (Card / COD). `POST /orders` → `POST /payments`; a declined card shows an inline error with **Retry** / switch-to-COD, then redirects to the order confirmation |
+| `/login`, `/register` | Minimal centred forms; redirect to `/` (or `?redirect=`) on success |
+| `/orders`, `/orders/[id]` | The current user's order history + detail |
+
+Shared pieces: `lib/api-client.ts` (isomorphic fetch — forwards cookies
+server-side, `credentials: "include"` in the browser, throws `ApiError` on
+non-2xx), `lib/stores/auth-store.ts` (Zustand: `{ user, cartCount, setUser,
+setCartCount, clearAuth }`) seeded once on load by `<AuthBootstrap>` in the root
+layout via `GET /auth/me`, `components/ui/` (Button, Card, Badge, StarRating,
+Input, Skeleton, …), `components/storefront/` (Navbar, Footer, Breadcrumb,
+product cards, …). The category sidebar batches every filter (type checkboxes,
+price, colour, size, dress style) behind one **Apply Filter** button.
+
+`frontend/proxy.ts` (Next.js 16 renamed `middleware` → `proxy`) redirects
+logged-out visitors away from `/cart`, `/checkout`, `/orders` and non-admins away
+from `/admin/*`. The backend still enforces real auth on every request.
+
+## Admin panel
+
+`frontend/app/(admin)/admin/` — same design system as the storefront (reuses
+`components/ui/` Button / Card / Badge / Table / Input; no admin-only component
+library). Persistent left sidebar with a black active state; the top bar reads
+the admin's name from the **same Zustand `auth-store`**. `proxy.ts` is the primary
+guard; `AdminShell` adds a client-side role check that redirects non-admins.
+
+| Route | What it does |
+| ----- | ------------ |
+| `/admin` | Stat cards (total orders, revenue, products, low-stock) aggregated on the client from `GET /admin/orders` + `GET /products` — no new endpoint — plus a recent-orders table |
+| `/admin/products` | Table (name, category, type, price, summed stock, status) with search, **Add Product**, edit / soft-delete row actions |
+| `/admin/products/new`, `/admin/products/[id]` | Product form — scalars + category/type/dress-style selects; on **create** an interactive variants + image-URL editor (`POST /products`); on **edit** scalars only (`PATCH /products/:id`), variants/images shown read-only |
+| `/admin/categories` | Table + inline add / edit form (`POST` / `PATCH /categories`) |
+| `/admin/orders` | All orders paginated; a per-row status `<select>` calls `PATCH /admin/orders/:id/status` and surfaces the backend's error verbatim on an illegal transition |
+
 ## Environment variables
 
 ### backend/.env
@@ -140,6 +205,8 @@ npm run dev                   # http://localhost:3000
 | `JWT_SECRET`   | `change-me-in-production`                                     |
 | `PORT`         | `4000`                                                        |
 | `FRONTEND_URL` | `http://localhost:3000`                                       |
+| `ADMIN_EMAIL`    | `admin@shopco.dev` — bootstrap admin, used only by `npm run seed` |
+| `ADMIN_PASSWORD` | a strong password — hashed by the seed, never stored in the repo |
 
 ### frontend/.env.local
 

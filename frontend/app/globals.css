@@ -2,10 +2,10 @@
 @config "../tailwind.config.ts";
 
 /*
- * ShopCo base theme — minimalist black / white / gray fashion palette.
+ * SHOP.CO base theme — minimalist black / white / gray fashion palette.
  * These tokens mirror `tailwind.config.ts` and expose Tailwind utilities such as
- * `bg-primary`, `text-foreground`, `bg-surface`, `border-border` and
- * `rounded-pill`.
+ * `bg-primary`, `text-foreground`, `bg-surface`, `border-border`, `rounded-pill`
+ * and `font-display`.
  */
 @theme {
   --color-primary: #1a1a1a;
@@ -27,14 +27,33 @@
   --color-surface-muted: #e5e5e5;
   --color-border: #e5e5e5;
 
+  --color-sale: #ff3333;
+
   --radius-pill: 9999px;
 
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display:
+    var(--font-archivo-black), var(--font-geist-sans), system-ui, sans-serif;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+}
+
+/* Condensed, all-caps display headings à la the SHOP.CO brand. */
+.font-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+/* Hide scrollbar for horizontal scrollers (testimonials, thumbnails). */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

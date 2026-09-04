@@ -1,11 +1,9 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { AdminShell } from "@/components/admin/admin-shell";
 
-/**
- * Admin dashboard layout.
- *
- * Placeholder — auth guard, sidebar navigation and admin chrome are added in a
- * later prompt.
- */
+export const metadata: Metadata = { title: "Admin — SHOP.CO" };
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-full flex-col bg-surface">{children}</div>;
+  return <AdminShell>{children}</AdminShell>;
 }

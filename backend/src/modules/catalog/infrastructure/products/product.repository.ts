@@ -12,15 +12,6 @@ import {
   UpdateProductData,
 } from '../../domain/repositories/product-repository.interface';
 
-type ProductListRow = Prisma.ProductGetPayload<{
-  include: {
-    category: true;
-    images: true;
-    variants: true;
-    _count: { select: { reviews: true } };
-  };
-}>;
-
 type ProductDetailRow = Prisma.ProductGetPayload<{
   include: {
     category: true;
@@ -29,6 +20,10 @@ type ProductDetailRow = Prisma.ProductGetPayload<{
     reviews: { select: { rating: true } };
   };
 }>;
+
+// The list rows carry the same shape as the detail rows (ratings included so the
+// average can be computed on the fly rather than stored on the product).
+type ProductListRow = ProductDetailRow;
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepository {
@@ -48,7 +43,7 @@ export class PrismaProductRepository implements ProductRepository {
           category: true,
           images: true,
           variants: true,
-          _count: { select: { reviews: true } },
+          reviews: { select: { rating: true } },
         },
       }),
       this.prisma.product.count({ where }),
@@ -95,6 +90,7 @@ export class PrismaProductRepository implements ProductRepository {
           description: data.description,
           price: data.price,
           discountPrice: data.discountPrice ?? null,
+          type: data.type ?? null,
           dressStyle: data.dressStyle ?? null,
           category: { connect: { id: data.categoryId } },
           variants: { create: data.variants },
@@ -120,6 +116,7 @@ export class PrismaProductRepository implements ProductRepository {
         description: data.description,
         price: data.price,
         discountPrice: data.discountPrice,
+        type: data.type,
         dressStyle: data.dressStyle,
         ...(data.categoryId
           ? { category: { connect: { id: data.categoryId } } }
@@ -147,6 +144,9 @@ export class PrismaProductRepository implements ProductRepository {
 
     if (filters.categorySlug) {
       where.category = { slug: filters.categorySlug };
+    }
+    if (filters.types && filters.types.length > 0) {
+      where.type = { in: filters.types };
     }
     if (filters.dressStyle) {
       where.dressStyle = filters.dressStyle;
@@ -214,24 +214,7 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   private mapListRow(row: ProductListRow): Product {
-    return new Product(
-      row.id,
-      row.name,
-      row.slug,
-      row.description,
-      row.price.toNumber(),
-      row.discountPrice ? row.discountPrice.toNumber() : null,
-      row.categoryId,
-      row.dressStyle,
-      row.isDeleted,
-      row.createdAt,
-      row.updatedAt,
-      row.category ? Category.fromRecord(row.category) : null,
-      this.mapVariants(row.variants),
-      this.mapImages(row.images),
-      0,
-      row._count.reviews,
-    );
+    return this.mapDetailRow(row);
   }
 
   private mapDetailRow(row: ProductDetailRow): Product {
@@ -249,6 +232,7 @@ export class PrismaProductRepository implements ProductRepository {
       row.price.toNumber(),
       row.discountPrice ? row.discountPrice.toNumber() : null,
       row.categoryId,
+      row.type,
       row.dressStyle,
       row.isDeleted,
       row.createdAt,

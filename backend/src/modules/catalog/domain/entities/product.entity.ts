@@ -15,6 +15,7 @@ export class Product {
     public readonly price: number,
     public readonly discountPrice: number | null,
     public readonly categoryId: string,
+    public readonly type: string | null,
     public readonly dressStyle: string | null,
     public readonly isDeleted: boolean,
     public readonly createdAt: Date,

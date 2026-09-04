@@ -9,6 +9,11 @@ export interface OrderPayment {
   transactionRef: string | null;
 }
 
+export interface OrderCustomer {
+  name: string;
+  email: string;
+}
+
 export class Order {
   constructor(
     public readonly id: string,
@@ -22,5 +27,6 @@ export class Order {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly payment: OrderPayment | null = null,
+    public readonly customer: OrderCustomer | null = null,
   ) {}
 }

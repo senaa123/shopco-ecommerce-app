@@ -1,5 +1,6 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -21,6 +22,23 @@ export class QueryProductsDto {
   @IsOptional()
   @IsString()
   categorySlug?: string;
+
+  /**
+   * Product type(s) — a single value or a comma-separated list
+   * (`?types=T-shirts,Jeans`) for multi-select checkboxes.
+   */
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean)
+      : value,
+  )
+  @IsArray()
+  @IsString({ each: true })
+  types?: string[];
 
   @IsOptional()
   @Type(() => Number)
