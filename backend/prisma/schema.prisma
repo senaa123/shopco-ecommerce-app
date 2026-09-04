@@ -57,6 +57,7 @@ model Product {
   discountPrice Decimal?
   categoryId    String
   category      Category         @relation(fields: [categoryId], references: [id])
+  type          String?
   dressStyle    String?
   isDeleted     Boolean          @default(false)
   variants      ProductVariant[]

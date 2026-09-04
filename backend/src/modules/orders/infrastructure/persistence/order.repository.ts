@@ -18,6 +18,7 @@ const orderInclude = {
     },
   },
   payment: true,
+  user: { select: { name: true, email: true } },
 } satisfies Prisma.OrderInclude;
 
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
@@ -160,6 +161,7 @@ export class PrismaOrderRepository implements OrderRepository {
             transactionRef: row.payment.transactionRef,
           }
         : null,
+      row.user ? { name: row.user.name, email: row.user.email } : null,
     );
   }
 }

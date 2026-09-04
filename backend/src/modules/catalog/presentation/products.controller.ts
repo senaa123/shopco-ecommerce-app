@@ -15,6 +15,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateProductUseCase } from '../application/use-cases/create-product.use-case';
+import { GetProductByIdUseCase } from '../application/use-cases/get-product-by-id.use-case';
 import { GetProductBySlugUseCase } from '../application/use-cases/get-product-by-slug.use-case';
 import { ListProductsUseCase } from '../application/use-cases/list-products.use-case';
 import { SoftDeleteProductUseCase } from '../application/use-cases/soft-delete-product.use-case';
@@ -28,6 +29,7 @@ export class ProductsController {
   constructor(
     private readonly listProductsUseCase: ListProductsUseCase,
     private readonly getProductBySlugUseCase: GetProductBySlugUseCase,
+    private readonly getProductByIdUseCase: GetProductByIdUseCase,
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly softDeleteProductUseCase: SoftDeleteProductUseCase,
@@ -36,6 +38,13 @@ export class ProductsController {
   @Get()
   list(@Query() query: QueryProductsDto) {
     return this.listProductsUseCase.execute(query);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('by-id/:id')
+  getById(@Param('id') id: string) {
+    return this.getProductByIdUseCase.execute(id);
   }
 
   @Get(':slug')

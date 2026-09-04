@@ -22,6 +22,7 @@ export interface CreateProductInput {
   price: number;
   discountPrice?: number | null;
   categoryId: string;
+  type?: string | null;
   dressStyle?: string | null;
   variants: { size: string; color: string; stock: number }[];
   images: { url: string }[];
@@ -67,6 +68,7 @@ export class CreateProductUseCase {
       price: input.price,
       discountPrice: input.discountPrice ?? null,
       categoryId: input.categoryId,
+      type: input.type ?? null,
       dressStyle: input.dressStyle ?? null,
       variants: input.variants,
       images: input.images,

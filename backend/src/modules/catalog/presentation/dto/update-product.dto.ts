@@ -34,5 +34,9 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsString()
+  type?: string | null;
+
+  @IsOptional()
+  @IsString()
   dressStyle?: string | null;
 }

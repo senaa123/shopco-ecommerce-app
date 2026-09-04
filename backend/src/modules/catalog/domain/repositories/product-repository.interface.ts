@@ -4,6 +4,8 @@ export type ProductSort = 'price_asc' | 'price_desc' | 'newest' | 'popular';
 
 export interface ProductListFilters {
   categorySlug?: string;
+  /** One or more product types (T-shirts, Shorts, …) to match with `IN`. */
+  types?: string[];
   minPrice?: number;
   maxPrice?: number;
   color?: string;
@@ -32,6 +34,7 @@ export interface CreateProductData {
   price: number;
   discountPrice?: number | null;
   categoryId: string;
+  type?: string | null;
   dressStyle?: string | null;
   variants: CreateVariantData[];
   images: CreateImageData[];
@@ -44,6 +47,7 @@ export interface UpdateProductData {
   price?: number;
   discountPrice?: number | null;
   categoryId?: string;
+  type?: string | null;
   dressStyle?: string | null;
 }
 

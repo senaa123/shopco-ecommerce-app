@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo_Black, Geist } from "next/font/google";
+import { AuthBootstrap } from "@/lib/stores/auth-bootstrap";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -7,23 +8,31 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const archivoBlack = Archivo_Black({
+  variable: "--font-archivo-black",
+  weight: "400",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "ShopCo",
-  description: "ShopCo — minimalist fashion e-commerce",
+  title: "SHOP.CO",
+  description:
+    "SHOP.CO — find clothes that match your style. A minimalist fashion store.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${archivoBlack.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-background text-foreground">
+        <AuthBootstrap>{children}</AuthBootstrap>
+      </body>
     </html>
   );
 }

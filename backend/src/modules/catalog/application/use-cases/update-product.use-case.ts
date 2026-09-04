@@ -23,6 +23,7 @@ export interface UpdateProductInput {
   price?: number;
   discountPrice?: number | null;
   categoryId?: string;
+  type?: string | null;
   dressStyle?: string | null;
 }
 
@@ -54,6 +55,7 @@ export class UpdateProductUseCase {
       price: input.price,
       discountPrice: input.discountPrice,
       categoryId: input.categoryId,
+      type: input.type,
       dressStyle: input.dressStyle,
     };
     if (input.slug !== undefined) {

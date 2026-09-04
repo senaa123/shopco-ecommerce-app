@@ -8,6 +8,7 @@ import {
 
 export interface ListProductsQuery {
   categorySlug?: string;
+  types?: string[];
   minPrice?: number;
   maxPrice?: number;
   color?: string;
@@ -46,6 +47,7 @@ export class ListProductsUseCase {
 
     const { data, total } = await this.productRepository.findMany({
       categorySlug: query.categorySlug,
+      types: query.types?.filter(Boolean),
       minPrice: query.minPrice,
       maxPrice: query.maxPrice,
       color: query.color,
