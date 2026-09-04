@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/*
+ * ShopCo base theme — minimalist black / white / gray fashion palette.
+ * These tokens mirror `tailwind.config.ts` and expose Tailwind utilities such as
+ * `bg-primary`, `text-foreground`, `bg-surface`, `border-border` and
+ * `rounded-pill`.
+ */
+@theme {
+  --color-primary: #1a1a1a;
+  --color-primary-50: #f7f7f7;
+  --color-primary-100: #f0f0f0;
+  --color-primary-200: #e4e4e4;
+  --color-primary-300: #d1d1d1;
+  --color-primary-400: #a0a0a0;
+  --color-primary-500: #737373;
+  --color-primary-600: #525252;
+  --color-primary-700: #383838;
+  --color-primary-800: #262626;
+  --color-primary-900: #1a1a1a;
+  --color-primary-950: #0d0d0d;
+
+  --color-background: #ffffff;
+  --color-foreground: #1a1a1a;
+  --color-surface: #f5f5f5;
+  --color-surface-muted: #e5e5e5;
+  --color-border: #e5e5e5;
+
+  --radius-pill: 9999px;
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
