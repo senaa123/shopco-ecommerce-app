@@ -6,6 +6,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -20,6 +22,8 @@ import { UsersModule } from './modules/users/users.module';
     CatalogModule,
     CartModule,
     OrdersModule,
+    PaymentsModule,
+    ReviewsModule,
     // Feature modules are registered here in later prompts.
   ],
 })
